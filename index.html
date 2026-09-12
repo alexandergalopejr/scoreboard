@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Asian Games Scoreboard</title>
+  <title>Asian Games Live Scoreboard</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -210,7 +210,7 @@
 </head>
 <body>
 
-  <!-- Game Selector -->
+  <!-- Game Selector Dropdown -->
   <div class="selector-container">
     <span class="selector-label">Select Match:</span>
     <select id="match-select" onchange="switchMatch(this.value)" class="selector-dropdown">
@@ -218,7 +218,7 @@
     </select>
   </div>
 
-  <!-- Scoreboard Main Card -->
+  <!-- Scoreboard Main Core Card Wrapper -->
   <div class="card">
     <div class="header-row">
       <div id="display-tournament" class="tournament-title">---</div>
@@ -226,7 +226,7 @@
     </div>
 
     <div class="matchup-grid">
-      <!-- Team 1 (Left) -->
+      <!-- Team 1 Left Margin Info -->
       <div class="team-col team-left">
         <div class="flag-box">
           <img id="display-team1-flag" class="flag-img" src="" style="display:none;" onerror="handleFlagError(1)">
@@ -235,13 +235,13 @@
         <div id="display-team1-name" class="team-name">---</div>
       </div>
 
-      <!-- Center Elements Panel -->
+      <!-- Center Elements Info Panel -->
       <div class="clock-center">
         <div id="display-period" class="period-label">--</div>
         <div id="display-timer" class="timer-label"></div>
       </div>
 
-      <!-- Team 2 (Right) -->
+      <!-- Team 2 Right Margin Info -->
       <div class="team-col team-right">
         <div class="flag-box">
           <img id="display-team2-flag" class="flag-img" src="" style="display:none;" onerror="handleFlagError(2)">
@@ -251,87 +251,88 @@
       </div>
     </div>
 
-    <!-- Scores Area -->
+    <!-- Live Big Score Section Layout Rows -->
     <div class="score-row">
       <div id="display-team1-score" class="score-num">0</div>
       <div class="vs-divider">VS</div>
       <div id="display-team2-score" class="score-num">0</div>
     </div>
 
-    <!-- Navigation Buttons -->
+    <!-- Symmetrical Manual Navigation Buttons Panel -->
     <div class="nav-controls">
       <button onclick="navigateMatch(-1)" class="nav-btn">◀ Previous Match</button>
       <button onclick="navigateMatch(1)" class="nav-btn">Next Match ▶</button>
     </div>
 
     <div id="display-footer" class="footer-row">
-      <div class="pulse-dot"></div> Live CSV Sync Engaged
+      <div class="pulse-dot"></div> Live Handshake Stream Enabled
     </div>
   </div>
 
-<!-- Completely fixed text-split CSV data stream reader script -->
+<!-- Complete, un-truncated live JSONP script handshake block -->
   <script>
     var SPREADSHEET_ID = '1qKaqGYZxPLP2wLk-lC8f_El76BPk1vg7c0xKWgCECt4';
     var allMatches = [];
-    var currentMatchCode = 'MEN-B3'; // Default landing selection triggers directly to your live game row
-
-    // Splits text lines on comma boundaries while protecting words inside double quotes
-    function parseCSVText(text) {
-      var lines = text.split('\n');
-      return lines.map(function(line) {
-        return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(function(field) {
-          return field.trim().replace(/^"|"$|\r/g, '');
-        });
-      }).filter(function(row) { return row.length > 1 && row[0] !== ""; });
-    }
+    var currentMatchCode = "MEN-B3"; // Anchor default view position onto your active live matchup item
 
     function startLiveSyncEngine() {
-      var xhr = new XMLHttpRequest();
-      // Bypasses browser cache by forcing a custom timestamp URL query on each loop
-      xhr.open('GET', 'https://google.com' + SPREADSHEET_ID + '/pub?output=csv&t=' + new Date().getTime(), true);
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-          var rows = parseCSVText(xhr.responseText);
-          if (rows.length < 2) return;
+      var oldScript = document.getElementById('sheets-live-script');
+      if (oldScript) oldScript.remove();
 
-          // Pulls values out of columns by target position indexes (0 is Column A, 1 is Column B, etc.)
-          allMatches = rows.slice(1).map(function(row) {
-            return {
-              Match: row[0] || '',        // Column A: Match ID
-              Tournament: row[1] || '',   // Column B: Tournament Name
-              Team1Name: row[2] || '',    // Column C: Home Team Name
-              Team1Code: row[3] || '',    // Column D: Home Country Code
-              Team2Name: row[4] || '',    // Column E: Away Team Name
-              Team2Code: row[5] || '',    // Column F: Away Country Code
-              Team1Score: row[6] || '0',  // Column G: Home Score
-              Team2Score: row[7] || '0',  // Column H: Away Score
-              Period: row[8] || '',       // Column I: Period Tag
-              Time: row[9] || '',         // Column J: Game Time Remaining
-              Status: row[10] || ''       // Column K: Overall Status Tag
-            };
-          }).filter(function(m) { return m.Match !== 'Match' && m.Match !== ''; });
-
-          updateMenuDropdown();
-          renderActiveMatch();
-        }
-      };
-      xhr.send();
+      // Injects a script source connection tag which completely ignores browser CORS rules
+      var script = document.createElement('script');
+      script.id = 'sheets-live-script';
+      script.src = "https://google.com" + SPREADSHEET_ID + "/gviz/tq?tqx=responseHandler:processGoogleSheetLive&t=" + new Date().getTime();
+      document.body.appendChild(script);
     }
+
+    // Google returns spreadsheet values directly into this custom function call callback wrapper
+    window.processGoogleSheetLive = function(json) {
+      try {
+        var rows = json.table.rows;
+        
+        allMatches = rows.map(function(row) {
+          if (!row.c) return null;
+          var getCell = function(idx) {
+            if (!row.c[idx] || row.c[idx].v === null) return "";
+            return row.c[idx].f ? row.c[idx].f.toString().trim() : row.c[idx].v.toString().trim();
+          };
+
+          return {
+            Match: getCell(0),        // Column A
+            Tournament: getCell(1),   // Column B
+            Team1Name: getCell(2),    // Column C
+            Team1Code: getCell(3),    // Column D
+            Team2Name: getCell(4),    // Column E
+            Team2Code: getCell(5),    // Column F
+            Team1Score: getCell(6),   // Column G
+            Team2Score: getCell(7),   // Column H
+            Period: getCell(8),       // Column I
+            Time: getCell(9),         // Column J
+            Status: getCell(10)       // Column K
+          };
+        }).filter(function(m) { return m !== null && m.Match !== "Match" && m.Match !== ""; });
+
+        updateMenuDropdown();
+        renderActiveMatch();
+      } catch (err) {
+        console.error("Live Synchronization Stream Unpacking Exception: ", err);
+      }
+    };
 
     function updateMenuDropdown() {
       var select = document.getElementById('match-select');
       if (allMatches.length === 0) return;
       
-      var activeSelection = currentMatchCode || allMatches[0].Match;
+      var activeSelection = currentMatchCode || allMatches.Match;
       
-      // Initialize or rebuild option layout list wrapper if blank
-      if (select.children.length <= 1 || select.value === '') {
-        select.innerHTML = '';
+      if (select.children.length <= 1 || select.value === "") {
+        select.innerHTML = "";
         allMatches.forEach(function(match) {
           var opt = document.createElement('option');
           opt.value = match.Match;
-          opt.innerText = match.Match + ': ' + match.Team1Name + ' vs ' + match.Team2Name;
-          if (match.Match === activeSelection) opt.selected = true;
+          opt.innerText = match.Match + ": " + match.Team1Name + " vs " + match.Team2Name;
+          if(match.Match === activeSelection) opt.selected = true;
           select.appendChild(opt);
         });
       }
@@ -358,8 +359,8 @@
 
     function handleFlagError(teamNum) {
       var match = allMatches.find(function(m) { return m.Match === currentMatchCode; });
-      var imgEl = document.getElementById('display-team' + teamNum + '-flag');
-      var textEl = document.getElementById('fallback-text-' + teamNum);
+      var imgEl = document.getElementById("display-team" + teamNum + "-flag");
+      var textEl = document.getElementById("fallback-text-" + teamNum);
       if (imgEl && textEl && match) {
         imgEl.style.display = 'none';
         textEl.innerText = teamNum === 1 ? match.Team1Code : match.Team2Code;
@@ -382,33 +383,33 @@
       
       var flag1Img = document.getElementById('display-team1-flag');
       var fallback1 = document.getElementById('fallback-text-1');
-      if (match.Team1Code) {
+      if(match.Team1Code) {
         fallback1.style.display = 'none';
         flag1Img.style.display = 'block';
-        flag1Img.src = 'https://flagcdn.com' + match.Team1Code.toLowerCase().trim() + '.png';
+        flag1Img.src = "https://flagcdn.com" + match.Team1Code.toLowerCase().trim() + ".png";
       } else {
         flag1Img.style.display = 'none';
         fallback1.style.display = 'inline';
-        fallback1.innerText = '🏁';
+        fallback1.innerText = "🏁";
       }
 
       var flag2Img = document.getElementById('display-team2-flag');
       var fallback2 = document.getElementById('fallback-text-2');
-      if (match.Team2Code) {
+      if(match.Team2Code) {
         fallback2.style.display = 'none';
         flag2Img.style.display = 'block';
-        flag2Img.src = 'https://flagcdn.com' + match.Team2Code.toLowerCase().trim() + '.png';
+        flag2Img.src = "https://flagcdn.com" + match.Team2Code.toLowerCase().trim() + ".png";
       } else {
         flag2Img.style.display = 'none';
         fallback2.style.display = 'inline';
-        fallback2.innerText = '🏁';
+        fallback2.innerText = "🏁";
       }
 
       var statusEl = document.getElementById('display-status');
       var gameStatus = match.Status ? match.Status.toUpperCase() : 'SCHEDULED';
       statusEl.innerText = gameStatus;
       
-      statusEl.className = 'status-badge';
+      statusEl.className = "status-badge";
       if (gameStatus === 'LIVE' || gameStatus === 'HALFTIME') {
         statusEl.classList.add('status-live');
       } else if (gameStatus === 'FINAL' || gameStatus === 'FINISHED') {
@@ -416,7 +417,7 @@
       }
     }
 
-    // Refresh synchronization loop runs every 4 seconds
+    // Secure sync tick checks rows cleanly every 4 seconds
     setInterval(startLiveSyncEngine, 4000);
     startLiveSyncEngine();
   </script>
