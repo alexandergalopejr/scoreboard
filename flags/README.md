@@ -1,0 +1,1 @@
+Flag images folder
