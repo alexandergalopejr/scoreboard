@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Asian Games Live Scoreboard</title>
+  <title>Asian Games Scoreboard</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -218,7 +218,7 @@
     </select>
   </div>
 
-  <!-- Scoreboard Main Canvas Box -->
+  <!-- Scoreboard Main Card -->
   <div class="card">
     <div class="header-row">
       <div id="display-tournament" class="tournament-title">---</div>
@@ -235,7 +235,7 @@
         <div id="display-team1-name" class="team-name">---</div>
       </div>
 
-      <!-- Center Metadata Panel -->
+      <!-- Center Elements Panel -->
       <div class="clock-center">
         <div id="display-period" class="period-label">--</div>
         <div id="display-timer" class="timer-label"></div>
@@ -251,78 +251,72 @@
       </div>
     </div>
 
-    <!-- Numerical Results Row -->
+    <!-- Scores Area -->
     <div class="score-row">
       <div id="display-team1-score" class="score-num">0</div>
       <div class="vs-divider">VS</div>
       <div id="display-team2-score" class="score-num">0</div>
     </div>
 
-    <!-- Manual Navigation Controls Buttons Layout -->
+    <!-- Navigation Buttons -->
     <div class="nav-controls">
       <button onclick="navigateMatch(-1)" class="nav-btn">◀ Previous Match</button>
       <button onclick="navigateMatch(1)" class="nav-btn">Next Match ▶</button>
     </div>
 
     <div id="display-footer" class="footer-row">
-      <div class="pulse-dot"></div> Live Spreadsheet Link Engaged
+      <div class="pulse-dot"></div> Live CSV Sync Engaged
     </div>
   </div>
 
-<!-- Completely fixed, un-truncated live sync block -->
+<!-- Complete, un-truncated live CSV sync script block -->
   <script>
     const SPREADSHEET_ID = '1qKaqGYZxPLP2wLk-lC8f_El76BPk1vg7c0xKWgCECt4';
     let allMatches = [];
     let currentMatchCode = "MEN-B3"; // Anchor default landing view on your live matchup item
 
-    function startLiveSyncEngine() {
-      const oldScript = document.getElementById('sheets-live-script');
-      if (oldScript) oldScript.remove();
-
-      // Dynamic script delivery handshake bypasses local sandbox security locks
-      const script = document.createElement('script');
-      script.id = 'sheets-live-script';
-      script.src = "https://google.com" + SPREADSHEET_ID + "/gviz/tq?tqx=responseHandler:processGoogleSheetLive";
-      document.body.appendChild(script);
+    // Standard CSV text streaming parser
+    function parseCSVText(text) {
+      const lines = text.split('\n');
+      return lines.map(function(line) {
+        return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(function(field) {
+          return field.trim().replace(/^"|"$|\r/g, '');
+        });
+      }).filter(function(row) { return row.length > 1 && row !== ""; });
     }
 
-    // Google server returns raw values directly to this safe, position-based mapping block
-    window.processGoogleSheetLive = function(json) {
+    async function startLiveSyncEngine() {
       try {
-        const rows = json.table.rows;
+        // Fetches your public Comma Separated spreadsheet text streams cleanly
+        const response = await fetch("https://google.com" + SPREADSHEET_ID + "/pub?output=csv&cacheBust=" + new Date().getTime());
+        const text = await response.text();
+        const rows = parseCSVText(text);
         
-        allMatches = rows.map(function(row) {
-          if (!row.c) return null;
-          const getCell = function(idx) {
-            if (!row.c[idx] || row.c[idx].v === null) return "";
-            return row.c[idx].f ? row.c[idx].f.toString().trim() : row.c[idx].v.toString().trim();
-          };
+        if (rows.length < 2) return;
 
-          // Strict index positions map perfectly to your Google Sheet layout (Columns A to K)
+        // FIXED FIELD TRACKING MAPPINGS: Direct index array column locations from your Google Sheet
+        allMatches = rows.slice(1).map(function(row) {
           return {
-            Match: getCell(0),        // Column A: Match ID
-            Tournament: getCell(1),   // Column B: Tournament Name
-            Team1Name: getCell(2),    // Column C: Home Team Title
-            Team1Code: getCell(3),    // Column D: Home Country Code
-            Team2Name: getCell(4),    // Column E: Away Team Title
-            Team2Code: getCell(5),    // Column F: Away Country Code
-            Team1Score: getCell(6),   // Column G: Home Team Score
-            Team2Score: getCell(7),   // Column H: Away Team Score
-            Period: getCell(8),       // Column I: Match Period Status
-            Time: getCell(9),         // Column J: Clock Time Remaining
-            Status: getCell(10)       // Column K: Active Status Flag
+            Match: row[0] || "",        // Column A: Match ID
+            Tournament: row[1] || "",   // Column B: Tournament Name
+            Team1Name: row[2] || "",    // Column C: Home Team Name
+            Team1Code: row[3] || "",    // Column D: Home Country Code
+            Team2Name: row[4] || "",    // Column E: Away Team Name
+            Team2Code: row[5] || "",    // Column F: Away Country Code
+            Team1Score: row[6] || "0",  // Column G: Home Team Score
+            Team2Score: row[7] || "0",  // Column H: Away Team Score
+            Period: row[8] || "",       // Column I: Period Status
+            Time: row[9] || "",         // Column J: Clock Time Remaining
+            Status: row[10] || ""       // Column K: Overall Status Tag
           };
-        }).filter(function(m) { 
-          // Filters out the header row strings cleanly
-          return m !== null && m.Match !== "Match" && m.Match !== ""; 
-        });
+        }).filter(function(m) { return m.Match !== "Match" && m.Match !== ""; });
 
         updateMenuDropdown();
         renderActiveMatch();
       } catch (err) {
-        console.error("Position-based live parsing exception: ", err);
+        console.error("Live CSV Retrieval Error: ", err);
       }
-    };
+    }
 
     function updateMenuDropdown() {
       const select = document.getElementById('match-select');
@@ -330,7 +324,6 @@
       
       const activeSelection = currentMatchCode || allMatches[0].Match;
       
-      // Rebuild the selection selector items list layout box only if uninitialized
       if (select.children.length <= 1 || select.value === "") {
         select.innerHTML = "";
         allMatches.forEach(function(match) {
@@ -422,7 +415,7 @@
       }
     }
 
-    // Ping update query loops every 4 seconds
+    // Refresh synchronization cycles run smoothly every 4 seconds
     setInterval(startLiveSyncEngine, 4000);
     startLiveSyncEngine();
   </script>
