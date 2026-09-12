@@ -122,7 +122,8 @@
     .flag-fallback {
       font-size: 12px;
       font-weight: 700;
-      color: #70757a;
+      color: #5f6368;
+      text-transform: uppercase;
     }
     .team-name {
       font-size: 14px;
@@ -258,7 +259,7 @@
       <div id="display-team2-score" class="score-num">0</div>
     </div>
 
-    <!-- Symmetrical Manual Navigation Toggle Buttons -->
+    <!-- Manual Navigation Toggle Buttons -->
     <div class="nav-controls">
       <button onclick="navigateMatch(-1)" class="nav-btn">◀ Previous Match</button>
       <button onclick="navigateMatch(1)" class="nav-btn">Next Match ▶</button>
@@ -280,7 +281,7 @@
     function parseCSVText(text) {
       var lines = text.split('\n');
       return lines.map(function(line) {
-        return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(function(field) {
+        return line.split(/,(?=(?:?:[^"]*"){2})*[^"]*$)/).map(function(field) {
           return field.trim().replace(/^"|"$|\r/g, '');
         });
       }).filter(function(row) { return row.length > 1 && row !== ""; });
@@ -301,21 +302,21 @@
         allMatches = matchRows.map(function(row) {
           if (!row || row.length < 11) return null;
           
-          // Safety array duplication layer preserves properties on refresh cycles
           var workingCopy = row.slice(); 
           
+          // EXACT COLUMN MAPPING MATCHING YOUR SPREADSHEET GRID LAYOUT (A-K):
           return {
-            Match: workingCopy.shift(),        // Column A
-            Tournament: workingCopy.shift(),   // Column B
-            Team1Name: workingCopy.shift(),    // Column C
-            Team1Code: workingCopy.shift(),    // Column D
-            Team2Name: workingCopy.shift(),    // Column E
-            Team2Code: workingCopy.shift(),    // Column F
-            Team1Score: workingCopy.shift(),   // Column G
-            Team2Score: workingCopy.shift(),   // Column H
-            Period: workingCopy.shift(),       // Column I
-            Time: workingCopy.shift(),         // Column J
-            Status: workingCopy.shift()        // Column K
+            Match: workingCopy.shift(),        // Column A: Match ID (MEN-C3)
+            Tournament: workingCopy.shift(),   // Column B: League Title (Asian Games)
+            Team1Name: workingCopy.shift(),    // Column C: Left Team (Bahrain)
+            Team1Code: workingCopy.shift(),    // Column D: Left Team Code (BH)
+            Team2Name: workingCopy.shift(),    // Column E: Right Team (China)
+            Team2Code: workingCopy.shift(),    // Column F: Right Team Code (CN)
+            Team1Score: workingCopy.shift(),   // Column G: Left Team Score (54)
+            Team2Score: workingCopy.shift(),   // Column H: Right Team Score (99)
+            Period: workingCopy.shift(),       // Column I: Period text (Q4)
+            Time: workingCopy.shift(),         // Column J: Game Clock (2:48)
+            Status: workingCopy.shift()        // Column K: Status Flag (LIVE)
           };
         }).filter(function(m) { 
           return m !== null && m.Match !== '' && m.Match.toLowerCase() !== 'match'; 
@@ -416,28 +417,30 @@
       document.getElementById('display-timer').innerText = match.Time || '';
       document.getElementById('display-footer').innerHTML = '<div class="pulse-dot"></div> Match: ' + match.Match + ' | ' + (allMatches.indexOf(match) + 1) + ' of ' + allMatches.length;
       
+      // TEAM 1 FLAG (Column D Code -> Left Display Element):
       var flag1Img = document.getElementById('display-team1-flag');
       var fallback1 = document.getElementById('fallback-text-1');
-      if (match.Team1Code) {
+      if (match.Team1Code && match.Team1Code.toLowerCase() !== "upcoming") {
         fallback1.style.display = 'none';
         flag1Img.style.display = 'block';
         flag1Img.src = 'https://flagcdn.com' + match.Team1Code.toLowerCase().trim() + '.png';
       } else {
         flag1Img.style.display = 'none';
         fallback1.style.display = 'inline';
-        fallback1.innerText = '🏁';
+        fallback1.innerText = match.Team1Code || '🏁';
       }
 
+      // TEAM 2 FLAG (Column F Code -> Right Display Element):
       var flag2Img = document.getElementById('display-team2-flag');
       var fallback2 = document.getElementById('fallback-text-2');
-      if (match.Team2Code) {
+      if (match.Team2Code && match.Team2Code.toLowerCase() !== "upcoming") {
         fallback2.style.display = 'none';
         flag2Img.style.display = 'block';
         flag2Img.src = 'https://flagcdn.com' + match.Team2Code.toLowerCase().trim() + '.png';
       } else {
         flag2Img.style.display = 'none';
         fallback2.style.display = 'inline';
-        fallback2.innerText = '🏁';
+        fallback2.innerText = match.Team2Code || '🏁';
       }
 
       var statusEl = document.getElementById('display-status');
