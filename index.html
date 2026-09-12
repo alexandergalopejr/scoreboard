@@ -269,24 +269,24 @@
     </div>
   </div>
 
-<!-- Complete, un-truncated live sync script block -->
+<!-- Completely fixed, un-truncated live sync block -->
   <script>
     const SPREADSHEET_ID = '1qKaqGYZxPLP2wLk-lC8f_El76BPk1vg7c0xKWgCECt4';
     let allMatches = [];
-    let currentMatchCode = "MEN-B3"; // Anchor landing default view position straight to your live game
+    let currentMatchCode = "MEN-B3"; // Anchor default landing view on your live matchup item
 
     function startLiveSyncEngine() {
       const oldScript = document.getElementById('sheets-live-script');
       if (oldScript) oldScript.remove();
 
-      // Creates a dynamic script injection tag which completely bypasses all CORS browser security local blockers
+      // Dynamic script delivery handshake bypasses local sandbox security locks
       const script = document.createElement('script');
       script.id = 'sheets-live-script';
       script.src = "https://google.com" + SPREADSHEET_ID + "/gviz/tq?tqx=responseHandler:processGoogleSheetLive";
       document.body.appendChild(script);
     }
 
-    // Google's data server drops spreadsheet properties cleanly directly into this callback function structure
+    // Google server returns raw values directly to this safe, position-based mapping block
     window.processGoogleSheetLive = function(json) {
       try {
         const rows = json.table.rows;
@@ -298,25 +298,29 @@
             return row.c[idx].f ? row.c[idx].f.toString().trim() : row.c[idx].v.toString().trim();
           };
 
+          // Strict index positions map perfectly to your Google Sheet layout (Columns A to K)
           return {
-            Match: getCell(0),        // Column A
-            Tournament: getCell(1),   // Column B
-            Team1Name: getCell(2),    // Column C
-            Team1Code: getCell(3),    // Column D
-            Team2Name: getCell(4),    // Column E
-            Team2Code: getCell(5),    // Column F
-            Team1Score: getCell(6),   // Column G
-            Team2Score: getCell(7),   // Column H
-            Period: getCell(8),       // Column I
-            Time: getCell(9),         // Column J
-            Status: getCell(10)       // Column K
+            Match: getCell(0),        // Column A: Match ID
+            Tournament: getCell(1),   // Column B: Tournament Name
+            Team1Name: getCell(2),    // Column C: Home Team Title
+            Team1Code: getCell(3),    // Column D: Home Country Code
+            Team2Name: getCell(4),    // Column E: Away Team Title
+            Team2Code: getCell(5),    // Column F: Away Country Code
+            Team1Score: getCell(6),   // Column G: Home Team Score
+            Team2Score: getCell(7),   // Column H: Away Team Score
+            Period: getCell(8),       // Column I: Match Period Status
+            Time: getCell(9),         // Column J: Clock Time Remaining
+            Status: getCell(10)       // Column K: Active Status Flag
           };
-        }).filter(function(m) { return m !== null && m.Match !== "Match" && m.Match !== ""; });
+        }).filter(function(m) { 
+          // Filters out the header row strings cleanly
+          return m !== null && m.Match !== "Match" && m.Match !== ""; 
+        });
 
         updateMenuDropdown();
         renderActiveMatch();
       } catch (err) {
-        console.error("Live Mapping Stream Engine Failure: ", err);
+        console.error("Position-based live parsing exception: ", err);
       }
     };
 
@@ -326,7 +330,7 @@
       
       const activeSelection = currentMatchCode || allMatches[0].Match;
       
-      // Keep menu context structure intact during loop sync data updates
+      // Rebuild the selection selector items list layout box only if uninitialized
       if (select.children.length <= 1 || select.value === "") {
         select.innerHTML = "";
         allMatches.forEach(function(match) {
@@ -340,13 +344,11 @@
       currentMatchCode = activeSelection;
     }
 
-    // Switch matchup view handler
     function switchMatch(code) {
       currentMatchCode = code;
       renderActiveMatch();
     }
 
-    // Previous and Next button navigation controller logic
     function navigateMatch(direction) {
       if (allMatches.length === 0) return;
       let idx = allMatches.findIndex(function(m) { return m.Match === currentMatchCode; });
@@ -360,7 +362,6 @@
       renderActiveMatch();
     }
 
-    // Hides image container gracefully if an invalid code is supplied
     function handleFlagError(teamNum) {
       const match = allMatches.find(function(m) { return m.Match === currentMatchCode; });
       const imgEl = document.getElementById("display-team" + teamNum + "-flag");
@@ -385,13 +386,12 @@
       document.getElementById('display-timer').innerText = match.Time || '';
       document.getElementById('display-footer').innerHTML = '<div class="pulse-dot"></div> Match: ' + match.Match + ' | ' + (allMatches.indexOf(match) + 1) + ' of ' + allMatches.length;
       
-      // Update team flag images
       const flag1Img = document.getElementById('display-team1-flag');
       const fallback1 = document.getElementById('fallback-text-1');
       if(match.Team1Code) {
         fallback1.style.display = 'none';
         flag1Img.style.display = 'block';
-        flag1Img.src = "https://flagcdn.com" + match.Team1Code.toLowerCase() + ".png";
+        flag1Img.src = "https://flagcdn.com" + match.Team1Code.toLowerCase().trim() + ".png";
       } else {
         flag1Img.style.display = 'none';
         fallback1.style.display = 'inline';
@@ -403,14 +403,13 @@
       if(match.Team2Code) {
         fallback2.style.display = 'none';
         flag2Img.style.display = 'block';
-        flag2Img.src = "https://flagcdn.com" + match.Team2Code.toLowerCase() + ".png";
+        flag2Img.src = "https://flagcdn.com" + match.Team2Code.toLowerCase().trim() + ".png";
       } else {
         flag2Img.style.display = 'none';
         fallback2.style.display = 'inline';
         fallback2.innerText = "🏁";
       }
 
-      // Update match status design color profiles
       const statusEl = document.getElementById('display-status');
       const gameStatus = match.Status ? match.Status.toUpperCase() : 'SCHEDULED';
       statusEl.innerText = gameStatus;
@@ -423,7 +422,7 @@
       }
     }
 
-    // Start fetching from sheet immediately, running updates loop step every 4 seconds
+    // Ping update query loops every 4 seconds
     setInterval(startLiveSyncEngine, 4000);
     startLiveSyncEngine();
   </script>
