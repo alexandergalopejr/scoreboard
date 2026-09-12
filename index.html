@@ -271,48 +271,52 @@
     </div>
   </div>
 
-<!-- Complete, un-truncated PapaParse live sync script block -->
+ <!-- Bulletproof Position-Based CSV Sync Script -->
   <script>
     const SPREADSHEET_ID = '1qKaqGYZxPLP2wLk-lC8f_El76BPk1vg7c0xKWgCECt4';
     let allMatches = [];
-    let currentMatchCode = "MEN-B3"; // Anchor landing view on your live game
+    let currentMatchCode = "MEN-B3"; // Anchor default landing view on your live game
 
     async function startLiveSyncEngine() {
       try {
-        // Fetches your public data directly as a pure CSV stream to bypass Google's API locks completely
-        var csvUrl = "https://google.com" + SPREADSHEET_ID + "/pub?output=csv&cacheBust=" + new Date().getTime();
+        // Uses the direct export link which works instantly as long as the sheet is shared publicly
+        var csvUrl = "https://google.com" + SPREADSHEET_ID + "/export?format=csv&cacheBust=" + new Date().getTime();
         
         Papa.parse(csvUrl, {
           download: true,
-          header: true, // Automatically parses column titles using row 1 names
+          header: false, // Reads by column order (0, 1, 2...) so typos in headers can't break it
           skipEmptyLines: true,
           complete: function(results) {
             var data = results.data;
-            if (!data || data.length === 0) return;
+            if (!data || data.length < 2) return;
 
-            // Map spreadsheet cells strictly matching your column titles perfectly
-            allMatches = data.map(function(row) {
+            // Skip row 0 (the header text) and map everything by physical column positions
+            var matchRows = data.slice(1);
+
+            allMatches = matchRows.map(function(row) {
               return {
-                Match: row["Match"] ? row["Match"].trim() : "",
-                Tournament: row["Tournament"] ? row["Tournament"].trim() : "",
-                Team1Name: row["Team 1 Name"] ? row["Team 1 Name"].trim() : "",
-                Team1Code: row["Team 1 Code"] ? row["Team 1 Code"].trim() : "",
-                Team2Name: row["Team 2 Name"] ? row["Team 2 Name"].trim() : "",
-                Team2Code: row["Team 2 Code"] ? row["Team 2 Code"].trim() : "",
-                Team1Score: row["Team 1 Score"] ? row["Team 1 Score"].trim() : "0",
-                Team2Score: row["Team 2 Score"] ? row["Team 2 Score"].trim() : "0",
-                Period: row["Period"] ? row["Period"].trim() : "",
-                Time: row["Time"] ? row["Time"].trim() : "",
-                Status: row["Status"] ? row["Status"].trim() : ""
+                Match: row[0] ? row[0].trim() : "",        // Column A
+                Tournament: row[1] ? row[1].trim() : "",   // Column B
+                Team1Name: row[2] ? row[2].trim() : "",    // Column C
+                Team1Code: row[3] ? row[3].trim() : "",    // Column D
+                Team2Name: row[4] ? row[4].trim() : "",    // Column E
+                Team2Code: row[5] ? row[5].trim() : "",    // Column F
+                Team1Score: row[6] ? row[6].trim() : "0",  // Column G
+                Team2Score: row[7] ? row[7].trim() : "0",  // Column H
+                Period: row[8] ? row[8].trim() : "",       // Column I
+                Time: row[9] ? row[9].trim() : "",         // Column J
+                Status: row[10] ? row[10].trim() : ""      // Column K
               };
-            }).filter(function(m) { return m.Match !== ""; });
+            }).filter(function(m) { 
+              return m.Match !== "" && m.Match.toLowerCase() !== "match"; 
+            });
 
             updateMenuDropdown();
             renderActiveMatch();
           }
         });
       } catch (err) {
-        console.error("Live Text Stream Collection Failure: ", err);
+        console.error("Scoreboard sync engine encounter error: ", err);
       }
     }
 
