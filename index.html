@@ -269,44 +269,45 @@
     </div>
   </div>
 
-<script>
+<!-- Completely fixed text-split CSV data stream reader script -->
+  <script>
     var SPREADSHEET_ID = '1qKaqGYZxPLP2wLk-lC8f_El76BPk1vg7c0xKWgCECt4';
     var allMatches = [];
-    var currentMatchCode = 'MEN-B3'; // Lands directly onto your active live match item
+    var currentMatchCode = 'MEN-B3'; // Default landing selection triggers directly to your live game row
 
-    // Text parser handles column splitting smoothly across online server channels
+    // Splits text lines on comma boundaries while protecting words inside double quotes
     function parseCSVText(text) {
       var lines = text.split('\n');
       return lines.map(function(line) {
         return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(function(field) {
           return field.trim().replace(/^"|"$|\r/g, '');
         });
-      }).filter(function(row) { return row.length > 1 && row !== ""; });
+      }).filter(function(row) { return row.length > 1 && row[0] !== ""; });
     }
 
     function startLiveSyncEngine() {
-      // Direct vanilla request fetches raw string data bypassing all browser blocks
       var xhr = new XMLHttpRequest();
+      // Bypasses browser cache by forcing a custom timestamp URL query on each loop
       xhr.open('GET', 'https://google.com' + SPREADSHEET_ID + '/pub?output=csv&t=' + new Date().getTime(), true);
       xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200) {
           var rows = parseCSVText(xhr.responseText);
           if (rows.length < 2) return;
 
-          // Safe, alternative row index assignment mapping method
+          // Pulls values out of columns by target position indexes (0 is Column A, 1 is Column B, etc.)
           allMatches = rows.slice(1).map(function(row) {
             return {
-              Match: row.slice(0, 1)[0] || '',        // Column A: Match ID
-              Tournament: row.slice(1, 2)[0] || '',   // Column B: Tournament Title
-              Team1Name: row.slice(2, 3)[0] || '',    // Column C: Home Team Title
-              Team1Code: row.slice(3, 4)[0] || '',    // Column D: Home Country Code
-              Team2Name: row.slice(4, 5)[0] || '',    // Column E: Away Team Title
-              Team2Code: row.slice(5, 6)[0] || '',    // Column F: Away Country Code
-              Team1Score: row.slice(6, 7)[0] || '0',  // Column G: Home Score
-              Team2Score: row.slice(7, 8)[0] || '0',  // Column H: Away Score
-              Period: row.slice(8, 9)[0] || '',       // Column I: Period Tag
-              Time: row.slice(9, 10)[0] || '',        // Column J: Clock Time Remaining
-              Status: row.slice(10, 11)[0] || ''      // Column K: Active Status Tag
+              Match: row[0] || '',        // Column A: Match ID
+              Tournament: row[1] || '',   // Column B: Tournament Name
+              Team1Name: row[2] || '',    // Column C: Home Team Name
+              Team1Code: row[3] || '',    // Column D: Home Country Code
+              Team2Name: row[4] || '',    // Column E: Away Team Name
+              Team2Code: row[5] || '',    // Column F: Away Country Code
+              Team1Score: row[6] || '0',  // Column G: Home Score
+              Team2Score: row[7] || '0',  // Column H: Away Score
+              Period: row[8] || '',       // Column I: Period Tag
+              Time: row[9] || '',         // Column J: Game Time Remaining
+              Status: row[10] || ''       // Column K: Overall Status Tag
             };
           }).filter(function(m) { return m.Match !== 'Match' && m.Match !== ''; });
 
@@ -323,6 +324,7 @@
       
       var activeSelection = currentMatchCode || allMatches[0].Match;
       
+      // Initialize or rebuild option layout list wrapper if blank
       if (select.children.length <= 1 || select.value === '') {
         select.innerHTML = '';
         allMatches.forEach(function(match) {
@@ -414,7 +416,7 @@
       }
     }
 
-    // Refresh sequence running queries every 4 seconds
+    // Refresh synchronization loop runs every 4 seconds
     setInterval(startLiveSyncEngine, 4000);
     startLiveSyncEngine();
   </script>
