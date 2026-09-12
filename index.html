@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2026 Asian Games Live Scoreboard</title>
-  <!-- Includes PapaParse to read the live Google Sheet stream directly -->
-  <script src="https://cloudflare.com"></script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -212,7 +210,7 @@
 </head>
 <body>
 
-  <!-- Dropdown Game Selector -->
+  <!-- Game Selector Dropdown -->
   <div class="selector-container">
     <span class="selector-label">Select Match:</span>
     <select id="match-select" onchange="switchMatch(this.value)" class="selector-dropdown">
@@ -220,7 +218,7 @@
     </select>
   </div>
 
-  <!-- Scoreboard Main UI Card -->
+  <!-- Scoreboard Box Card -->
   <div class="card">
     <div class="header-row">
       <div id="display-tournament" class="tournament-title">---</div>
@@ -228,7 +226,7 @@
     </div>
 
     <div class="matchup-grid">
-      <!-- Team 1 Left Margin -->
+      <!-- Team 1 (Left) -->
       <div class="team-col team-left">
         <div class="flag-box">
           <img id="display-team1-flag" class="flag-img" src="" style="display:none;" onerror="handleFlagError(1)">
@@ -237,13 +235,13 @@
         <div id="display-team1-name" class="team-name">---</div>
       </div>
 
-      <!-- Center Clock Metadata Info -->
+      <!-- Center Elements Panel -->
       <div class="clock-center">
         <div id="display-period" class="period-label">--</div>
         <div id="display-timer" class="timer-label"></div>
       </div>
 
-      <!-- Team 2 Right Margin -->
+      <!-- Team 2 (Right) -->
       <div class="team-col team-right">
         <div class="flag-box">
           <img id="display-team2-flag" class="flag-img" src="" style="display:none;" onerror="handleFlagError(2)">
@@ -253,7 +251,7 @@
       </div>
     </div>
 
-    <!-- Symmetrical Large Numbers Score Container -->
+    <!-- Live Numeric Score Box Row -->
     <div class="score-row">
       <div id="display-team1-score" class="score-num">0</div>
       <div class="vs-divider">VS</div>
@@ -267,87 +265,108 @@
     </div>
 
     <div id="display-footer" class="footer-row">
-      <div class="pulse-dot"></div> Direct Sheet Sync Active
+      <div class="pulse-dot"></div> Live Sheet Sync Engaged
     </div>
   </div>
 
+  <!-- Complete, bracket-free live sync script block -->
   <script>
-    const SPREADSHEET_ID = '1qKaqGYZxPLP2wLk-lC8f_El76BPk1vg7c0xKWgCECt4';
-    let allMatches = [];
-    let currentMatchCode = "MEN-C3"; // Automatically anchors on the Bahrain vs China game
+    var SPREADSHEET_ID = '1qKaqGYZxPLP2wLk-lC8f_El76BPk1vg7c0xKWgCECt4';
+    var allMatches = [];
+    var currentMatchCode = ""; 
+    var hasSetDefaultLandingGame = false;
+
+    // Splits text lines on comma boundaries safely
+    function parseCSVText(text) {
+      var lines = text.split('\n');
+      return lines.map(function(line) {
+        return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(function(field) {
+          return field.trim().replace(/^"|"$|\r/g, '');
+        });
+      }).filter(function(row) { return row.length > 1 && row !== ""; });
+    }
 
     async function startLiveSyncEngine() {
       try {
-        // Direct web export bypasses all cache and network security policies flawlessly
-        var csvUrl = "https://google.com" + SPREADSHEET_ID + "/export?format=csv&cacheBust=" + new Date().getTime();
+        var csvUrl = 'https://google.com' + SPREADSHEET_ID + '/export?format=csv&cacheBust=' + new Date().getTime();
+        var response = await fetch(csvUrl);
+        var text = await response.text();
+        var rows = parseCSVText(text);
         
-        Papa.parse(csvUrl, {
-          download: true,
-          header: false, // Forces raw index extraction to prevent text parsing header failures
-          skipEmptyLines: true,
-          complete: function(results) {
-            var data = results.data;
-            if (!data || data.length < 2) return;
+        if (rows.length < 2) return;
+        var matchRows = rows.slice(1);
 
-            var matchRows = data.slice(1);
-
-            allMatches = matchRows.map(function(row) {
-              if (!row || row.length < 11) return null;
-              
-              // Map spreadsheet columns strictly by position indexes (0 = A, 1 = B, etc.)
-              var matchId = row[0] ? row[0].trim() : "";
-              var tournament = row[1] ? row[1].trim() : "";
-              var t1Name = row[2] ? row[2].trim() : "";
-              var t1Code = row[3] ? row[3].trim() : "";
-              var t2Name = row[4] ? row[4].trim() : "";
-              var t2Code = row[5] ? row[5].trim() : "";
-              var t1Score = row[6] ? row[6].trim() : "0";
-              var t2Score = row[7] ? row[7].trim() : "0";
-              var gamePeriod = row[8] ? row[8].trim() : "";
-              var gameTime = row[9] ? row[9].trim() : "";
-              var gameStatus = row[10] ? row[10].trim() : "";
-
-              return {
-                Match: matchId,
-                Tournament: tournament,
-                Team1Name: t1Name,
-                Team1Code: t1Code,
-                Team2Name: t2Name,
-                Team2Code: t2Code,
-                Team1Score: t1Score,
-                Team2Score: t2Score,
-                Period: gamePeriod,
-                Time: gameTime,
-                Status: gameStatus
-              };
-            }).filter(function(m) { 
-              return m !== null && m.Match !== "" && m.Match.toLowerCase() !== "match"; 
-            });
-
-            updateMenuDropdown();
-            renderActiveMatch();
-          }
+        allMatches = matchRows.map(function(row) {
+          if (!row || row.length < 11) return null;
+          
+          // Creates a shallow safety clone copy of the array so elements aren't destroyed
+          var workingCopy = row.slice(); 
+          
+          return {
+            Match: workingCopy.shift(),        // Column A
+            Tournament: workingCopy.shift(),   // Column B
+            Team1Name: workingCopy.shift(),    // Column C
+            Team1Code: workingCopy.shift(),    // Column D
+            Team2Name: workingCopy.shift(),    // Column E
+            Team2Code: workingCopy.shift(),    // Column F
+            Team1Score: workingCopy.shift(),   // Column G
+            Team2Score: workingCopy.shift(),   // Column H
+            Period: workingCopy.shift(),       // Column I
+            Time: workingCopy.shift(),         // Column J
+            Status: workingCopy.shift()        // Column K
+          };
+        }).filter(function(m) { 
+          return m !== null && m.Match !== '' && m.Match.toLowerCase() !== 'match'; 
         });
+
+        // AUTOMATIC PRIORITY FINDER: Finds live game first, then latest finished game
+        if (!hasSetDefaultLandingGame && allMatches.length > 0) {
+          var liveGame = allMatches.find(function(m) { 
+            return m.Status.toUpperCase() === 'LIVE' || m.Status.toUpperCase() === 'HALFTIME'; 
+          });
+          
+          if (liveGame) {
+            currentMatchCode = liveGame.Match;
+          } else {
+            // If no live game is active, find the very last match that contains an active 'FINISHED' tag
+            var completedGames = allMatches.filter(function(m) { return m.Status.toUpperCase() === 'FINISHED'; });
+            if (completedGames.length > 0) {
+              currentMatchCode = completedGames[completedGames.length - 1].Match;
+            } else {
+              currentMatchCode = allMatches.Match;
+            }
+          }
+          hasSetDefaultLandingGame = true; 
+        }
+
+        updateMenuDropdown();
+        renderActiveMatch();
       } catch (err) {
-        console.error("Scoreboard sync engine encounter error: ", err);
+        console.error('Scoreboard live syncing error: ', err);
       }
     }
 
     function updateMenuDropdown() {
-      const select = document.getElementById('match-select');
+      var select = document.getElementById('match-select');
       if (allMatches.length === 0) return;
       
-      const activeSelection = currentMatchCode || allMatches[0].Match;
+      var activeSelection = currentMatchCode || allMatches.Match;
       
-      if (select.children.length <= 1 || select.value === "") {
-        select.innerHTML = "";
+      // Updates select context layout block options lists elements
+      if (select.children.length <= 1 || select.value === '') {
+        select.innerHTML = '';
         allMatches.forEach(function(match) {
-          const opt = document.createElement('option');
+          var opt = document.createElement('option');
           opt.value = match.Match;
-          opt.innerText = match.Match + ": " + match.Team1Name + " vs " + match.Team2Name;
-          if(match.Match === activeSelection) opt.selected = true;
+          opt.innerText = match.Match + ': ' + match.Team1Name + ' vs ' + match.Team2Name;
+          if (match.Match === activeSelection) opt.selected = true;
           select.appendChild(opt);
         });
+      }
+      
+      // Keep selected dropdown sync locked on live changes updates ticking loops
+      if(select.value !== activeSelection) {
+        select.value = activeSelection;
       }
       currentMatchCode = activeSelection;
     }
@@ -359,7 +378,7 @@
 
     function navigateMatch(direction) {
       if (allMatches.length === 0) return;
-      let idx = allMatches.findIndex(function(m) { return m.Match === currentMatchCode; });
+      var idx = allMatches.findIndex(function(m) { return m.Match === currentMatchCode; });
       idx += direction;
       
       if (idx < 0) idx = allMatches.length - 1;
@@ -371,9 +390,9 @@
     }
 
     function handleFlagError(teamNum) {
-      const match = allMatches.find(function(m) { return m.Match === currentMatchCode; });
-      const imgEl = document.getElementById("display-team" + teamNum + "-flag");
-      const textEl = document.getElementById("fallback-text-" + teamNum);
+      var match = allMatches.find(function(m) { return m.Match === currentMatchCode; });
+      var imgEl = document.getElementById('display-team' + teamNum + '-flag');
+      var textEl = document.getElementById('fallback-text-' + teamNum);
       if (imgEl && textEl && match) {
         imgEl.style.display = 'none';
         textEl.innerText = teamNum === 1 ? match.Team1Code : match.Team2Code;
@@ -382,7 +401,7 @@
     }
 
     function renderActiveMatch() {
-      const match = allMatches.find(function(m) { return m.Match === currentMatchCode; });
+      var match = allMatches.find(function(m) { return m.Match === currentMatchCode; });
       if (!match) return;
 
       document.getElementById('display-tournament').innerText = match.Tournament;
@@ -394,35 +413,35 @@
       document.getElementById('display-timer').innerText = match.Time || '';
       document.getElementById('display-footer').innerHTML = '<div class="pulse-dot"></div> Match: ' + match.Match + ' | ' + (allMatches.indexOf(match) + 1) + ' of ' + allMatches.length;
       
-      const flag1Img = document.getElementById('display-team1-flag');
-      const fallback1 = document.getElementById('fallback-text-1');
-      if(match.Team1Code) {
+      var flag1Img = document.getElementById('display-team1-flag');
+      var fallback1 = document.getElementById('fallback-text-1');
+      if (match.Team1Code) {
         fallback1.style.display = 'none';
         flag1Img.style.display = 'block';
-        flag1Img.src = "https://flagcdn.com" + match.Team1Code.toLowerCase().trim() + ".png";
+        flag1Img.src = 'https://flagcdn.com' + match.Team1Code.toLowerCase().trim() + '.png';
       } else {
         flag1Img.style.display = 'none';
         fallback1.style.display = 'inline';
-        fallback1.innerText = "🏁";
+        fallback1.innerText = '🏁';
       }
 
-      const flag2Img = document.getElementById('display-team2-flag');
-      const fallback2 = document.getElementById('fallback-text-2');
-      if(match.Team2Code) {
+      var flag2Img = document.getElementById('display-team2-flag');
+      var fallback2 = document.getElementById('fallback-text-2');
+      if (match.Team2Code) {
         fallback2.style.display = 'none';
         flag2Img.style.display = 'block';
-        flag2Img.src = "https://flagcdn.com" + match.Team2Code.toLowerCase().trim() + ".png";
+        flag2Img.src = 'https://flagcdn.com' + match.Team2Code.toLowerCase().trim() + '.png';
       } else {
         flag2Img.style.display = 'none';
         fallback2.style.display = 'inline';
-        fallback2.innerText = "🏁";
+        fallback2.innerText = '🏁';
       }
 
-      const statusEl = document.getElementById('display-status');
-      const gameStatus = match.Status ? match.Status.toUpperCase() : 'SCHEDULED';
+      var statusEl = document.getElementById('display-status');
+      var gameStatus = match.Status ? match.Status.toUpperCase() : 'SCHEDULED';
       statusEl.innerText = gameStatus;
       
-      statusEl.className = "status-badge";
+      statusEl.className = 'status-badge';
       if (gameStatus === 'LIVE' || gameStatus === 'HALFTIME') {
         statusEl.classList.add('status-live');
       } else if (gameStatus === 'FINAL' || gameStatus === 'FINISHED') {
