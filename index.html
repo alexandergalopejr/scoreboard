@@ -397,6 +397,30 @@
       renderActiveMatch();
     }
 
+    function getFlagCode(code) {
+      const map = {
+        PHI: 'ph',
+        CHN: 'cn',
+        KOR: 'kr',
+        JPN: 'jp',
+        HKG: 'hk'
+      };
+ 
+      return map[code.toUpperCase()] || code.toLowerCase();
+    }
+
+    function getFlagUrl(code) {
+      code = code.toUpperCase().trim();
+
+      if (code === 'TPE') {
+        return './tpe.png';
+      }
+
+      return 'https://flagcdn.com/w80/' +
+               getFlagCode(code) +
+              '.png';
+    }
+    
     function handleFlagError(teamNum) {
       var match = allMatches.find(function(m) { return m.Match === currentMatchCode; });
       var imgEl = document.getElementById('display-team' + teamNum + '-flag');
@@ -427,10 +451,7 @@
       if (match.Team1Code && match.Team1Code.toLowerCase() !== "upcoming") {
         fallback1.style.display = 'none';
         flag1Img.style.display = 'block';
-        flag1Img.src =
-          'https://flagcdn.com/w80/' +
-          match.Team1Code.toLowerCase().trim() +
-          '.png';
+        flag1Img.src = getFlagUrl(match.Team1Code);
       } else {
         flag1Img.style.display = 'none';
         fallback1.style.display = 'inline';
@@ -443,10 +464,7 @@
       if (match.Team2Code && match.Team2Code.toLowerCase() !== "upcoming") {
         fallback2.style.display = 'none';
         flag2Img.style.display = 'block';
-        flag2Img.src =
-          'https://flagcdn.com/w80/' +
-          match.Team2Code.toLowerCase().trim() +
-          '.png'
+        flag2Img.src = getFlagUrl(match.Team2Code);
       } else {
         flag2Img.style.display = 'none';
         fallback2.style.display = 'inline';
