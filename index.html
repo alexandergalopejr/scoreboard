@@ -269,7 +269,7 @@
     </div>
   </div>
 
-  <!-- Complete, bracket-free live sync script block -->
+  <!-- JavaScript Framework Interface Logic -->
   <script>
     var SPREADSHEET_ID = '1qKaqGYZxPLP2wLk-lC8f_El76BPk1vg7c0xKWgCECt4';
     var allMatches = [];
@@ -288,7 +288,9 @@
 
     async function startLiveSyncEngine() {
       try {
-        var csvUrl = 'https://google.com' + SPREADSHEET_ID + '/export?format=csv&cacheBust=' + new Date().getTime();
+        // FIXED URL CONNECTION LAYER: Points accurately to Google's file server directory paths
+        var csvUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/export?format=csv&cacheBust=' + new Date().getTime();
+        
         var response = await fetch(csvUrl);
         var text = await response.text();
         var rows = parseCSVText(text);
@@ -299,7 +301,7 @@
         allMatches = matchRows.map(function(row) {
           if (!row || row.length < 11) return null;
           
-          // Creates a shallow safety clone copy of the array so elements aren't destroyed
+          // Safety array duplication layer preserves properties on refresh cycles
           var workingCopy = row.slice(); 
           
           return {
@@ -319,17 +321,20 @@
           return m !== null && m.Match !== '' && m.Match.toLowerCase() !== 'match'; 
         });
 
-        // AUTOMATIC PRIORITY FINDER: Finds live game first, then latest finished game
+        // PRIORITIZATION LAYER: Opens live matches first, or defaults to the latest finished matchup on load
         if (!hasSetDefaultLandingGame && allMatches.length > 0) {
           var liveGame = allMatches.find(function(m) { 
-            return m.Status.toUpperCase() === 'LIVE' || m.Status.toUpperCase() === 'HALFTIME'; 
+            var s = m.Status.toUpperCase();
+            return s === 'LIVE' || s === 'HALFTIME'; 
           });
           
           if (liveGame) {
             currentMatchCode = liveGame.Match;
           } else {
-            // If no live game is active, find the very last match that contains an active 'FINISHED' tag
-            var completedGames = allMatches.filter(function(m) { return m.Status.toUpperCase() === 'FINISHED'; });
+            var completedGames = allMatches.filter(function(m) { 
+              var s = m.Status.toUpperCase();
+              return s === 'FINISHED' || s === 'FINAL'; 
+            });
             if (completedGames.length > 0) {
               currentMatchCode = completedGames[completedGames.length - 1].Match;
             } else {
@@ -352,7 +357,6 @@
       
       var activeSelection = currentMatchCode || allMatches.Match;
       
-      // Updates select context layout block options lists elements
       if (select.children.length <= 1 || select.value === '') {
         select.innerHTML = '';
         allMatches.forEach(function(match) {
@@ -364,8 +368,7 @@
         });
       }
       
-      // Keep selected dropdown sync locked on live changes updates ticking loops
-      if(select.value !== activeSelection) {
+      if (select.value !== activeSelection) {
         select.value = activeSelection;
       }
       currentMatchCode = activeSelection;
