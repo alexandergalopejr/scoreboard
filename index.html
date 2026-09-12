@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Asian Games Scoreboard</title>
+  <title>2026 Asian Games Live Scoreboard</title>
+  <!-- Includes PapaParse to read the live Google Sheet stream directly -->
+  <script src="https://cloudflare.com"></script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -193,22 +195,32 @@
       padding-top: 8px;
       border-top: 1px solid #f1f3f4;
       font-size: 11px;
-      color: #1a73e8;
+      color: #1e7e34;
       font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #28a745;
     }
   </style>
 </head>
 <body>
 
-  <!-- Game Selector -->
+  <!-- Dropdown Game Selector -->
   <div class="selector-container">
     <span class="selector-label">Select Match:</span>
     <select id="match-select" onchange="switchMatch(this.value)" class="selector-dropdown">
-      <option value="">Loading schedule files...</option>
+      <option value="">Connecting to Google Sheet...</option>
     </select>
   </div>
 
-  <!-- Scoreboard Main Card -->
+  <!-- Scoreboard Main UI Card -->
   <div class="card">
     <div class="header-row">
       <div id="display-tournament" class="tournament-title">---</div>
@@ -216,7 +228,7 @@
     </div>
 
     <div class="matchup-grid">
-      <!-- Team 1 (Left) -->
+      <!-- Team 1 Left Margin -->
       <div class="team-col team-left">
         <div class="flag-box">
           <img id="display-team1-flag" class="flag-img" src="" style="display:none;" onerror="handleFlagError(1)">
@@ -225,13 +237,13 @@
         <div id="display-team1-name" class="team-name">---</div>
       </div>
 
-      <!-- Center Elements Panel -->
+      <!-- Center Clock Metadata Info -->
       <div class="clock-center">
         <div id="display-period" class="period-label">--</div>
         <div id="display-timer" class="timer-label"></div>
       </div>
 
-      <!-- Team 2 (Right) -->
+      <!-- Team 2 Right Margin -->
       <div class="team-col team-right">
         <div class="flag-box">
           <img id="display-team2-flag" class="flag-img" src="" style="display:none;" onerror="handleFlagError(2)">
@@ -241,39 +253,83 @@
       </div>
     </div>
 
-    <!-- Scores Area -->
+    <!-- Symmetrical Large Numbers Score Container -->
     <div class="score-row">
       <div id="display-team1-score" class="score-num">0</div>
       <div class="vs-divider">VS</div>
       <div id="display-team2-score" class="score-num">0</div>
     </div>
 
-    <!-- Navigation Buttons -->
+    <!-- Symmetrical Manual Navigation Toggle Buttons -->
     <div class="nav-controls">
       <button onclick="navigateMatch(-1)" class="nav-btn">◀ Previous Match</button>
       <button onclick="navigateMatch(1)" class="nav-btn">Next Match ▶</button>
     </div>
 
-    <div id="display-footer" class="footer-row">Local Secure Engine Verified</div>
+    <div id="display-footer" class="footer-row">
+      <div class="pulse-dot"></div> Direct Sheet Sync Active
+    </div>
   </div>
 
-<!-- Completely fixed, cache-bypassing live script block -->
   <script>
+    const SPREADSHEET_ID = '1qKaqGYZxPLP2wLk-lC8f_El76BPk1vg7c0xKWgCECt4';
     let allMatches = [];
-    let currentMatchCode = "MEN-B3"; // Set default landing view to your active live game
+    let currentMatchCode = "MEN-C3"; // Automatically anchors on the Bahrain vs China game
 
     async function startLiveSyncEngine() {
       try {
-        // Appending a live millisecond timestamp (?t=...) forces your browser to bypass cache and read fresh data
-        var response = await fetch("schedule.json?t=" + new Date().getTime());
-        allMatches = await response.json();
+        // Direct web export bypasses all cache and network security policies flawlessly
+        var csvUrl = "https://google.com" + SPREADSHEET_ID + "/export?format=csv&cacheBust=" + new Date().getTime();
         
-        if (!allMatches || allMatches.length === 0) return;
+        Papa.parse(csvUrl, {
+          download: true,
+          header: false, // Forces raw index extraction to prevent text parsing header failures
+          skipEmptyLines: true,
+          complete: function(results) {
+            var data = results.data;
+            if (!data || data.length < 2) return;
 
-        updateMenuDropdown();
-        renderActiveMatch();
+            var matchRows = data.slice(1);
+
+            allMatches = matchRows.map(function(row) {
+              if (!row || row.length < 11) return null;
+              
+              // Map spreadsheet columns strictly by position indexes (0 = A, 1 = B, etc.)
+              var matchId = row[0] ? row[0].trim() : "";
+              var tournament = row[1] ? row[1].trim() : "";
+              var t1Name = row[2] ? row[2].trim() : "";
+              var t1Code = row[3] ? row[3].trim() : "";
+              var t2Name = row[4] ? row[4].trim() : "";
+              var t2Code = row[5] ? row[5].trim() : "";
+              var t1Score = row[6] ? row[6].trim() : "0";
+              var t2Score = row[7] ? row[7].trim() : "0";
+              var gamePeriod = row[8] ? row[8].trim() : "";
+              var gameTime = row[9] ? row[9].trim() : "";
+              var gameStatus = row[10] ? row[10].trim() : "";
+
+              return {
+                Match: matchId,
+                Tournament: tournament,
+                Team1Name: t1Name,
+                Team1Code: t1Code,
+                Team2Name: t2Name,
+                Team2Code: t2Code,
+                Team1Score: t1Score,
+                Team2Score: t2Score,
+                Period: gamePeriod,
+                Time: gameTime,
+                Status: gameStatus
+              };
+            }).filter(function(m) { 
+              return m !== null && m.Match !== "" && m.Match.toLowerCase() !== "match"; 
+            });
+
+            updateMenuDropdown();
+            renderActiveMatch();
+          }
+        });
       } catch (err) {
-        console.error("Local data lookup error: ", err);
+        console.error("Scoreboard sync engine encounter error: ", err);
       }
     }
 
@@ -281,7 +337,7 @@
       const select = document.getElementById('match-select');
       if (allMatches.length === 0) return;
       
-      const activeSelection = currentMatchCode || allMatches.Match;
+      const activeSelection = currentMatchCode || allMatches[0].Match;
       
       if (select.children.length <= 1 || select.value === "") {
         select.innerHTML = "";
@@ -336,7 +392,7 @@
       document.getElementById('display-team2-score').innerText = match.Team2Score;
       document.getElementById('display-period').innerText = match.Period || '--';
       document.getElementById('display-timer').innerText = match.Time || '';
-      document.getElementById('display-footer').innerHTML = "Match: " + match.Match + " | " + (allMatches.indexOf(match) + 1) + " of " + allMatches.length;
+      document.getElementById('display-footer').innerHTML = '<div class="pulse-dot"></div> Match: ' + match.Match + ' | ' + (allMatches.indexOf(match) + 1) + ' of ' + allMatches.length;
       
       const flag1Img = document.getElementById('display-team1-flag');
       const fallback1 = document.getElementById('fallback-text-1');
@@ -363,7 +419,7 @@
       }
 
       const statusEl = document.getElementById('display-status');
-      const gameStatus = match.Status.toUpperCase();
+      const gameStatus = match.Status ? match.Status.toUpperCase() : 'SCHEDULED';
       statusEl.innerText = gameStatus;
       
       statusEl.className = "status-badge";
@@ -374,8 +430,8 @@
       }
     }
 
-    // Auto-update engine synchronizes with the data stream every 5 seconds
-    setInterval(startLiveSyncEngine, 5000);
+    // Direct synchronization cycle updates data loop rows every 4 seconds cleanly
+    setInterval(startLiveSyncEngine, 4000);
     startLiveSyncEngine();
   </script>
   
