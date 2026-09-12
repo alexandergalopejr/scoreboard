@@ -281,7 +281,7 @@
     function parseCSVText(text) {
       var lines = text.split('\n');
       return lines.map(function(line) {
-        return line.split(/,(?=(?:?:[^"]*"){2})*[^"]*$)/).map(function(field) {
+        return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(function(field) {
           return field.trim().replace(/^"|"$|\r/g, '');
         });
       }).filter(function(row) { return row.length > 1 && row !== ""; });
@@ -290,7 +290,11 @@
     async function startLiveSyncEngine() {
       try {
         // FIXED URL CONNECTION LAYER: Points accurately to Google's file server directory paths
-        var csvUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/export?format=csv&cacheBust=' + new Date().getTime();
+        var csvUrl =
+          'https://docs.google.com/spreadsheets/d/' +
+          SPREADSHEET_ID +
+          '/export?format=csv&cacheBust=' +
+          new Date().getTime();
         
         var response = await fetch(csvUrl);
         var text = await response.text();
@@ -339,13 +343,25 @@
             if (completedGames.length > 0) {
               currentMatchCode = completedGames[completedGames.length - 1].Match;
             } else {
-              currentMatchCode = allMatches.Match;
+              currentMatchCode = allMatches[0].Match;
             }
           }
           hasSetDefaultLandingGame = true; 
         }
 
         updateMenuDropdown();
+        function getFlagCode(code) {
+          const map = {
+            PHI: 'ph',
+            CHN: 'cn',
+            KOR: 'kr',
+            JPN: 'jp',
+            HKG: 'hk',
+            TPE: 'tw'
+          };
+          
+          return map[code.toUpperCase()] || code.toLowerCase();
+        }
         renderActiveMatch();
       } catch (err) {
         console.error('Scoreboard live syncing error: ', err);
@@ -356,7 +372,7 @@
       var select = document.getElementById('match-select');
       if (allMatches.length === 0) return;
       
-      var activeSelection = currentMatchCode || allMatches.Match;
+      var activeSelection = currentMatchCode || allMatches[0].Match;
       
       if (select.children.length <= 1 || select.value === '') {
         select.innerHTML = '';
@@ -377,6 +393,18 @@
 
     function switchMatch(code) {
       currentMatchCode = code;
+    function getFlagCode(code) {
+          const map = {
+            PHI: 'ph',
+            CHN: 'cn',
+            KOR: 'kr',
+            JPN: 'jp',
+            HKG: 'hk',
+            TPE: 'tw'
+          };
+          
+          return map[code.toUpperCase()] || code.toLowerCase();
+        }  
       renderActiveMatch();
     }
 
@@ -390,6 +418,18 @@
       
       currentMatchCode = allMatches[idx].Match;
       document.getElementById('match-select').value = currentMatchCode;
+      function getFlagCode(code) {
+          const map = {
+            PHI: 'ph',
+            CHN: 'cn',
+            KOR: 'kr',
+            JPN: 'jp',
+            HKG: 'hk',
+            TPE: 'tw'
+          };
+          
+          return map[code.toUpperCase()] || code.toLowerCase();
+        }
       renderActiveMatch();
     }
 
@@ -423,7 +463,11 @@
       if (match.Team1Code && match.Team1Code.toLowerCase() !== "upcoming") {
         fallback1.style.display = 'none';
         flag1Img.style.display = 'block';
-        flag1Img.src = 'https://flagcdn.com' + match.Team1Code.toLowerCase().trim() + '.png';
+        flag1Img.src =
+          'https://flagcdn.com/w80/' +
+          getFlagCode(match.Team1Code) +
+          '.png';
+          `
       } else {
         flag1Img.style.display = 'none';
         fallback1.style.display = 'inline';
@@ -436,7 +480,10 @@
       if (match.Team2Code && match.Team2Code.toLowerCase() !== "upcoming") {
         fallback2.style.display = 'none';
         flag2Img.style.display = 'block';
-        flag2Img.src = 'https://flagcdn.com' + match.Team2Code.toLowerCase().trim() + '.png';
+        flag2Img.src =
+          'https://flagcdn.com/w80/' +
+          getFlagCode(match.Team2Code) +
+          '.png'
       } else {
         flag2Img.style.display = 'none';
         fallback2.style.display = 'inline';
