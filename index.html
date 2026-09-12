@@ -294,7 +294,7 @@
           'https://docs.google.com/spreadsheets/d/' +
           SPREADSHEET_ID +
           '/export?format=csv&cacheBust=' +
-          new Date().getTime();
+          Date.now();
         
         var response = await fetch(csvUrl);
         var text = await response.text();
@@ -350,18 +350,6 @@
         }
 
         updateMenuDropdown();
-        function getFlagCode(code) {
-          const map = {
-            PHI: 'ph',
-            CHN: 'cn',
-            KOR: 'kr',
-            JPN: 'jp',
-            HKG: 'hk',
-            TPE: 'tw'
-          };
-          
-          return map[code.toUpperCase()] || code.toLowerCase();
-        }
         renderActiveMatch();
       } catch (err) {
         console.error('Scoreboard live syncing error: ', err);
@@ -393,18 +381,6 @@
 
     function switchMatch(code) {
       currentMatchCode = code;
-    function getFlagCode(code) {
-          const map = {
-            PHI: 'ph',
-            CHN: 'cn',
-            KOR: 'kr',
-            JPN: 'jp',
-            HKG: 'hk',
-            TPE: 'tw'
-          };
-          
-          return map[code.toUpperCase()] || code.toLowerCase();
-        }  
       renderActiveMatch();
     }
 
@@ -418,18 +394,6 @@
       
       currentMatchCode = allMatches[idx].Match;
       document.getElementById('match-select').value = currentMatchCode;
-      function getFlagCode(code) {
-          const map = {
-            PHI: 'ph',
-            CHN: 'cn',
-            KOR: 'kr',
-            JPN: 'jp',
-            HKG: 'hk',
-            TPE: 'tw'
-          };
-          
-          return map[code.toUpperCase()] || code.toLowerCase();
-        }
       renderActiveMatch();
     }
 
@@ -443,7 +407,7 @@
         textEl.style.display = 'inline';
       }
     }
-
+   
     function renderActiveMatch() {
       var match = allMatches.find(function(m) { return m.Match === currentMatchCode; });
       if (!match) return;
@@ -465,9 +429,8 @@
         flag1Img.style.display = 'block';
         flag1Img.src =
           'https://flagcdn.com/w80/' +
-          getFlagCode(match.Team1Code) +
+          match.Team1Code.toLowerCase().trim() +
           '.png';
-          `
       } else {
         flag1Img.style.display = 'none';
         fallback1.style.display = 'inline';
@@ -482,7 +445,7 @@
         flag2Img.style.display = 'block';
         flag2Img.src =
           'https://flagcdn.com/w80/' +
-          getFlagCode(match.Team2Code) +
+          match.Team2Code.toLowerCase().trim() +
           '.png'
       } else {
         flag2Img.style.display = 'none';
