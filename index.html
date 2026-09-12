@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Asian Games Live Scoreboard</title>
-  <!-- Includes the PapaParse text engine directly to bypass Google's API locks -->
-  <script src="https://cloudflare.com"></script>
+  <title>Asian Games Scoreboard</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -195,18 +193,8 @@
       padding-top: 8px;
       border-top: 1px solid #f1f3f4;
       font-size: 11px;
-      color: #1e7e34;
+      color: #1a73e8;
       font-weight: 500;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-    .pulse-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background-color: #28a745;
     }
   </style>
 </head>
@@ -216,11 +204,11 @@
   <div class="selector-container">
     <span class="selector-label">Select Match:</span>
     <select id="match-select" onchange="switchMatch(this.value)" class="selector-dropdown">
-      <option value="">Syncing with Sheet...</option>
+      <option value="">Loading schedule files...</option>
     </select>
   </div>
 
-  <!-- Scoreboard Box -->
+  <!-- Scoreboard Main Card -->
   <div class="card">
     <div class="header-row">
       <div id="display-tournament" class="tournament-title">---</div>
@@ -237,7 +225,7 @@
         <div id="display-team1-name" class="team-name">---</div>
       </div>
 
-      <!-- Center Elements -->
+      <!-- Center Elements Panel -->
       <div class="clock-center">
         <div id="display-period" class="period-label">--</div>
         <div id="display-timer" class="timer-label"></div>
@@ -253,7 +241,7 @@
       </div>
     </div>
 
-    <!-- Scores Section -->
+    <!-- Scores Area -->
     <div class="score-row">
       <div id="display-team1-score" class="score-num">0</div>
       <div class="vs-divider">VS</div>
@@ -266,57 +254,26 @@
       <button onclick="navigateMatch(1)" class="nav-btn">Next Match ▶</button>
     </div>
 
-    <div id="display-footer" class="footer-row">
-      <div class="pulse-dot"></div> Live CSV Sync Engaged
-    </div>
+    <div id="display-footer" class="footer-row">Local Secure Engine Verified</div>
   </div>
 
- <!-- Bulletproof Position-Based CSV Sync Script -->
+<!-- Complete local-json reading sync script block -->
   <script>
-    const SPREADSHEET_ID = '1qKaqGYZxPLP2wLk-lC8f_El76BPk1vg7c0xKWgCECt4';
     let allMatches = [];
-    let currentMatchCode = "MEN-B3"; // Anchor default landing view on your live game
+    let currentMatchCode = "MEN-B3"; // Set default landing view to your active live game
 
     async function startLiveSyncEngine() {
       try {
-        // Uses the direct export link which works instantly as long as the sheet is shared publicly
-        var csvUrl = "https://google.com" + SPREADSHEET_ID + "/export?format=csv&cacheBust=" + new Date().getTime();
+        // Loads the json file right next to it inside your GitHub directory bypassing all browser blocks
+        var response = await fetch("schedule.json?t=" + new Date().getTime());
+        allMatches = await response.json();
         
-        Papa.parse(csvUrl, {
-          download: true,
-          header: false, // Reads by column order (0, 1, 2...) so typos in headers can't break it
-          skipEmptyLines: true,
-          complete: function(results) {
-            var data = results.data;
-            if (!data || data.length < 2) return;
+        if (!allMatches || allMatches.length === 0) return;
 
-            // Skip row 0 (the header text) and map everything by physical column positions
-            var matchRows = data.slice(1);
-
-            allMatches = matchRows.map(function(row) {
-              return {
-                Match: row[0] ? row[0].trim() : "",        // Column A
-                Tournament: row[1] ? row[1].trim() : "",   // Column B
-                Team1Name: row[2] ? row[2].trim() : "",    // Column C
-                Team1Code: row[3] ? row[3].trim() : "",    // Column D
-                Team2Name: row[4] ? row[4].trim() : "",    // Column E
-                Team2Code: row[5] ? row[5].trim() : "",    // Column F
-                Team1Score: row[6] ? row[6].trim() : "0",  // Column G
-                Team2Score: row[7] ? row[7].trim() : "0",  // Column H
-                Period: row[8] ? row[8].trim() : "",       // Column I
-                Time: row[9] ? row[9].trim() : "",         // Column J
-                Status: row[10] ? row[10].trim() : ""      // Column K
-              };
-            }).filter(function(m) { 
-              return m.Match !== "" && m.Match.toLowerCase() !== "match"; 
-            });
-
-            updateMenuDropdown();
-            renderActiveMatch();
-          }
-        });
+        updateMenuDropdown();
+        renderActiveMatch();
       } catch (err) {
-        console.error("Scoreboard sync engine encounter error: ", err);
+        console.error("Local data lookup error: ", err);
       }
     }
 
@@ -375,11 +332,11 @@
       document.getElementById('display-tournament').innerText = match.Tournament;
       document.getElementById('display-team1-name').innerText = match.Team1Name;
       document.getElementById('display-team2-name').innerText = match.Team2Name;
-      document.getElementById('display-team1-score').innerText = match.Team1Score || '0';
-      document.getElementById('display-team2-score').innerText = match.Team2Score || '0';
+      document.getElementById('display-team1-score').innerText = match.Team1Score;
+      document.getElementById('display-team2-score').innerText = match.Team2Score;
       document.getElementById('display-period').innerText = match.Period || '--';
       document.getElementById('display-timer').innerText = match.Time || '';
-      document.getElementById('display-footer').innerHTML = '<div class="pulse-dot"></div> Match: ' + match.Match + ' | ' + (allMatches.indexOf(match) + 1) + ' of ' + allMatches.length;
+      document.getElementById('display-footer').innerHTML = "Match: " + match.Match + " | " + (allMatches.indexOf(match) + 1) + " of " + allMatches.length;
       
       const flag1Img = document.getElementById('display-team1-flag');
       const fallback1 = document.getElementById('fallback-text-1');
@@ -406,7 +363,7 @@
       }
 
       const statusEl = document.getElementById('display-status');
-      const gameStatus = match.Status ? match.Status.toUpperCase() : 'SCHEDULED';
+      const gameStatus = match.Status.toUpperCase();
       statusEl.innerText = gameStatus;
       
       statusEl.className = "status-badge";
@@ -417,8 +374,8 @@
       }
     }
 
-    // Direct synchronization cycle updates data loop rows every 4 seconds cleanly
-    setInterval(startLiveSyncEngine, 4000);
+    // Auto-update checker refreshes local repositories data every 5 seconds
+    setInterval(startLiveSyncEngine, 5000);
     startLiveSyncEngine();
   </script>
   
