@@ -257,14 +257,14 @@
     <div id="display-footer" class="footer-row">Local Secure Engine Verified</div>
   </div>
 
-<!-- Complete local-json reading sync script block -->
+<!-- Completely fixed, cache-bypassing live script block -->
   <script>
     let allMatches = [];
     let currentMatchCode = "MEN-B3"; // Set default landing view to your active live game
 
     async function startLiveSyncEngine() {
       try {
-        // Loads the json file right next to it inside your GitHub directory bypassing all browser blocks
+        // Appending a live millisecond timestamp (?t=...) forces your browser to bypass cache and read fresh data
         var response = await fetch("schedule.json?t=" + new Date().getTime());
         allMatches = await response.json();
         
@@ -281,7 +281,7 @@
       const select = document.getElementById('match-select');
       if (allMatches.length === 0) return;
       
-      const activeSelection = currentMatchCode || allMatches[0].Match;
+      const activeSelection = currentMatchCode || allMatches.Match;
       
       if (select.children.length <= 1 || select.value === "") {
         select.innerHTML = "";
@@ -374,7 +374,7 @@
       }
     }
 
-    // Auto-update checker refreshes local repositories data every 5 seconds
+    // Auto-update engine synchronizes with the data stream every 5 seconds
     setInterval(startLiveSyncEngine, 5000);
     startLiveSyncEngine();
   </script>
