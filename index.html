@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asian Games Live Scoreboard</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background-color: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .selector-container {
+      width: 100%;
+      max-width: 380px;
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #dadce0;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      margin-bottom: 16px;
+      box-sizing: border-box;
+    }
+    .selector-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #70757a;
+    }
+    .selector-dropdown {
+      background-color: #f1f3f4;
+      font-size: 13px;
+      font-weight: 500;
+      color: #202124;
+      border-radius: 8px;
+      padding: 6px 12px;
+      border: 1px solid #dadce0;
+      outline: none;
+      cursor: pointer;
+      min-width: 220px;
+      max-width: 70%;
+    }
+    .card {
+      width: 100%;
+      max-width: 380px;
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #dadce0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      padding: 16px;
+      color: #202124;
+      box-sizing: border-box;
+    }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .tournament-title {
+      font-size: 12px;
+      color: #70757a;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 3px 6px;
+      border-radius: 4px;
+      background-color: #f1f3f4;
+      color: #606468;
+    }
+    .status-live, .status-halftime {
+      background-color: #fce8e6;
+      color: #c5221f;
+    }
+    .status-final, .status-finished {
+      background-color: #e8f0fe;
+      color: #1a73e8;
+    }
+    .matchup-grid {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .team-col {
+      width: 42%;
+      display: flex;
+      flex-direction: column;
+    }
+    .team-left { align-items: flex-start; }
+    .team-right { align-items: flex-end; text-align: right; }
+    .flag-box {
+      width: 46px;
+      height: 30px;
+      background-color: #f1f3f4;
+      border-radius: 4px;
+      border: 1px solid #dadce0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .flag-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .flag-fallback {
+      font-size: 12px;
+      font-weight: 700;
+      color: #70757a;
+    }
+    .team-name {
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.3;
+      word-break: break-word;
+    }
+    .clock-center {
+      width: 16%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .period-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #70757a;
+      margin-bottom: 2px;
+    }
+    .timer-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #c5221f;
+    }
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #f1f3f4;
+      border-bottom: 1px solid #f1f3f4;
+      padding: 12px 16px;
+      margin: 12px 0;
+    }
+    .score-num {
+      font-size: 44px;
+      font-weight: 700;
+    }
+    .vs-divider {
+      font-size: 13px;
+      font-weight: 500;
+      color: #70757a;
+      letter-spacing: 1px;
+    }
+    .nav-controls {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .nav-btn {
+      flex: 1;
+      background-color: #ffffff;
+      border: 1px solid #dadce0;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      color: #3c4043;
+    }
+    .nav-btn:hover {
+      background-color: #f8f9fa;
+    }
+    .footer-row {
+      text-align: center;
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid #f1f3f4;
+      font-size: 11px;
+      color: #1e7e34;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #28a745;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Game Selector -->
+  <div class="selector-container">
+    <span class="selector-label">Select Match:</span>
+    <select id="match-select" onchange="switchMatch(this.value)" class="selector-dropdown">
+      <option value="">Syncing with Sheet...</option>
+    </select>
+  </div>
+
+  <!-- Scoreboard Main Canvas Box -->
+  <div class="card">
+    <div class="header-row">
+      <div id="display-tournament" class="tournament-title">---</div>
+      <div id="display-status" class="status-badge">SCHEDULED</div>
+    </div>
+
+    <div class="matchup-grid">
+      <!-- Team 1 (Left) -->
+      <div class="team-col team-left">
+        <div class="flag-box">
+          <img id="display-team1-flag" class="flag-img" src="" style="display:none;" onerror="handleFlagError(1)">
+          <span id="fallback-text-1" class="flag-fallback">🏁</span>
+        </div>
+        <div id="display-team1-name" class="team-name">---</div>
+      </div>
+
+      <!-- Center Metadata Panel -->
+      <div class="clock-center">
+        <div id="display-period" class="period-label">--</div>
+        <div id="display-timer" class="timer-label"></div>
+      </div>
+
+      <!-- Team 2 (Right) -->
+      <div class="team-col team-right">
+        <div class="flag-box">
+          <img id="display-team2-flag" class="flag-img" src="" style="display:none;" onerror="handleFlagError(2)">
+          <span id="fallback-text-2" class="flag-fallback">🏁</span>
+        </div>
+        <div id="display-team2-name" class="team-name">---</div>
+      </div>
+    </div>
+
+    <!-- Numerical Results Row -->
+    <div class="score-row">
+      <div id="display-team1-score" class="score-num">0</div>
+      <div class="vs-divider">VS</div>
+      <div id="display-team2-score" class="score-num">0</div>
+    </div>
+
+    <!-- Manual Navigation Controls Buttons Layout -->
+    <div class="nav-controls">
+      <button onclick="navigateMatch(-1)" class="nav-btn">◀ Previous Match</button>
+      <button onclick="navigateMatch(1)" class="nav-btn">Next Match ▶</button>
+    </div>
+
+    <div id="display-footer" class="footer-row">
+      <div class="pulse-dot"></div> Live Spreadsheet Link Engaged
+    </div>
+  </div>
+
+<!-- Complete, un-truncated live sync script block -->
+  <script>
+    const SPREADSHEET_ID = '1qKaqGYZxPLP2wLk-lC8f_El76BPk1vg7c0xKWgCECt4';
+    let allMatches = [];
+    let currentMatchCode = "MEN-B3"; // Anchor landing default view position straight to your live game
+
+    function startLiveSyncEngine() {
+      const oldScript = document.getElementById('sheets-live-script');
+      if (oldScript) oldScript.remove();
+
+      // Creates a dynamic script injection tag which completely bypasses all CORS browser security local blockers
+      const script = document.createElement('script');
+      script.id = 'sheets-live-script';
+      script.src = "https://google.com" + SPREADSHEET_ID + "/gviz/tq?tqx=responseHandler:processGoogleSheetLive";
+      document.body.appendChild(script);
+    }
+
+    // Google's data server drops spreadsheet properties cleanly directly into this callback function structure
+    window.processGoogleSheetLive = function(json) {
+      try {
+        const rows = json.table.rows;
+        
+        allMatches = rows.map(function(row) {
+          if (!row.c) return null;
+          const getCell = function(idx) {
+            if (!row.c[idx] || row.c[idx].v === null) return "";
+            return row.c[idx].f ? row.c[idx].f.toString().trim() : row.c[idx].v.toString().trim();
+          };
+
+          return {
+            Match: getCell(0),        // Column A
+            Tournament: getCell(1),   // Column B
+            Team1Name: getCell(2),    // Column C
+            Team1Code: getCell(3),    // Column D
+            Team2Name: getCell(4),    // Column E
+            Team2Code: getCell(5),    // Column F
+            Team1Score: getCell(6),   // Column G
+            Team2Score: getCell(7),   // Column H
+            Period: getCell(8),       // Column I
+            Time: getCell(9),         // Column J
+            Status: getCell(10)       // Column K
+          };
+        }).filter(function(m) { return m !== null && m.Match !== "Match" && m.Match !== ""; });
+
+        updateMenuDropdown();
+        renderActiveMatch();
+      } catch (err) {
+        console.error("Live Mapping Stream Engine Failure: ", err);
+      }
+    };
+
+    function updateMenuDropdown() {
+      const select = document.getElementById('match-select');
+      if (allMatches.length === 0) return;
+      
+      const activeSelection = currentMatchCode || allMatches[0].Match;
+      
+      // Keep menu context structure intact during loop sync data updates
+      if (select.children.length <= 1 || select.value === "") {
+        select.innerHTML = "";
+        allMatches.forEach(function(match) {
+          const opt = document.createElement('option');
+          opt.value = match.Match;
+          opt.innerText = match.Match + ": " + match.Team1Name + " vs " + match.Team2Name;
+          if(match.Match === activeSelection) opt.selected = true;
+          select.appendChild(opt);
+        });
+      }
+      currentMatchCode = activeSelection;
+    }
+
+    // Switch matchup view handler
+    function switchMatch(code) {
+      currentMatchCode = code;
+      renderActiveMatch();
+    }
+
+    // Previous and Next button navigation controller logic
+    function navigateMatch(direction) {
+      if (allMatches.length === 0) return;
+      let idx = allMatches.findIndex(function(m) { return m.Match === currentMatchCode; });
+      idx += direction;
+      
+      if (idx < 0) idx = allMatches.length - 1;
+      if (idx >= allMatches.length) idx = 0;
+      
+      currentMatchCode = allMatches[idx].Match;
+      document.getElementById('match-select').value = currentMatchCode;
+      renderActiveMatch();
+    }
+
+    // Hides image container gracefully if an invalid code is supplied
+    function handleFlagError(teamNum) {
+      const match = allMatches.find(function(m) { return m.Match === currentMatchCode; });
+      const imgEl = document.getElementById("display-team" + teamNum + "-flag");
+      const textEl = document.getElementById("fallback-text-" + teamNum);
+      if (imgEl && textEl && match) {
+        imgEl.style.display = 'none';
+        textEl.innerText = teamNum === 1 ? match.Team1Code : match.Team2Code;
+        textEl.style.display = 'inline';
+      }
+    }
+
+    function renderActiveMatch() {
+      const match = allMatches.find(function(m) { return m.Match === currentMatchCode; });
+      if (!match) return;
+
+      document.getElementById('display-tournament').innerText = match.Tournament;
+      document.getElementById('display-team1-name').innerText = match.Team1Name;
+      document.getElementById('display-team2-name').innerText = match.Team2Name;
+      document.getElementById('display-team1-score').innerText = match.Team1Score || '0';
+      document.getElementById('display-team2-score').innerText = match.Team2Score || '0';
+      document.getElementById('display-period').innerText = match.Period || '--';
+      document.getElementById('display-timer').innerText = match.Time || '';
+      document.getElementById('display-footer').innerHTML = '<div class="pulse-dot"></div> Match: ' + match.Match + ' | ' + (allMatches.indexOf(match) + 1) + ' of ' + allMatches.length;
+      
+      // Update team flag images
+      const flag1Img = document.getElementById('display-team1-flag');
+      const fallback1 = document.getElementById('fallback-text-1');
+      if(match.Team1Code) {
+        fallback1.style.display = 'none';
+        flag1Img.style.display = 'block';
+        flag1Img.src = "https://flagcdn.com" + match.Team1Code.toLowerCase() + ".png";
+      } else {
+        flag1Img.style.display = 'none';
+        fallback1.style.display = 'inline';
+        fallback1.innerText = "🏁";
+      }
+
+      const flag2Img = document.getElementById('display-team2-flag');
+      const fallback2 = document.getElementById('fallback-text-2');
+      if(match.Team2Code) {
+        fallback2.style.display = 'none';
+        flag2Img.style.display = 'block';
+        flag2Img.src = "https://flagcdn.com" + match.Team2Code.toLowerCase() + ".png";
+      } else {
+        flag2Img.style.display = 'none';
+        fallback2.style.display = 'inline';
+        fallback2.innerText = "🏁";
+      }
+
+      // Update match status design color profiles
+      const statusEl = document.getElementById('display-status');
+      const gameStatus = match.Status ? match.Status.toUpperCase() : 'SCHEDULED';
+      statusEl.innerText = gameStatus;
+      
+      statusEl.className = "status-badge";
+      if (gameStatus === 'LIVE' || gameStatus === 'HALFTIME') {
+        statusEl.classList.add('status-live');
+      } else if (gameStatus === 'FINAL' || gameStatus === 'FINISHED') {
+        statusEl.classList.add('status-final');
+      }
+    }
+
+    // Start fetching from sheet immediately, running updates loop step every 4 seconds
+    setInterval(startLiveSyncEngine, 4000);
+    startLiveSyncEngine();
+  </script>
+
+</body>
+</html>
